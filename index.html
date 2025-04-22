@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Get Clean Auto Spa</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <style>
+    body {
+      background-color: black;
+      color: red;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .logo {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+    }
+    h1, h2 {
+      color: red;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid red;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: red;
+      color: black;
+    }
+    input, select {
+      width: 100%;
+      background-color: black;
+      color: red;
+      border: none;
+      text-align: center;
+    }
+    button {
+      background-color: red;
+      color: black;
+      border: none;
+      padding: 8px 12px;
+      margin: 5px 5px 10px 0;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: darkred;
+    }
+    .totals {
+      margin-top: 20px;
+    }
+    .hidden { display: none; }
+    #loginBox {
+      max-width: 300px;
+      margin: 100px auto;
+      text-align: center;
+    }
+    #loginBox input {
+      margin-bottom: 10px;
+    }
+    @media print {
+      button, input[type="text"], #loginBox, select {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <img src="getclean.png" alt="Get Clean Auto Spa Logo" width="180">
+  </div><br><br><br><br>
+
+  <div id="loginBox">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Username"><br>
+    <input type="password" id="password" placeholder="Password"><br>
+    <button onclick="login()">Login</button>
+    <p id="loginError" style="color: red;"></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <h1></h1>
+    <div>
+      <button onclick="addRow()">+ Add Row</button>
+      <button onclick="saveData()" id="saveBtn">💾 Save</button>
+      <button onclick="exportCSV()" id="exportBtn">📄 Export to CSV</button>
+      <button onclick="window.print()" id="printBtn">🖨️ Print</button>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+      <label>From Date: <input type="text" id="fromDate" placeholder="Select From Date"></label>
+      <label>To Date: <input type="text" id="toDate" placeholder="Select To Date"></label>
+      <label>Carwash Boy: <input type="text" id="filterBoy" oninput="applyFilters()" placeholder="Type name..."></label>
+      <button onclick="clearFilters()">Clear Filters</button>
+    </div>
+
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Carwash Boy</th>
+          <th>Unit Type</th>
+          <th>Sales Price</th>
+          <th>30% Amount</th>
+          <th>After 30%</th>
+          <th>Remarks</th>
+          <th>Payment</th>
+          <th>Mode of Payment</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="totals" id="totalsBox">
+      <h2>Totals</h2>
+      <p id="dailyTotal"></p>
+      <p id="weeklyTotal"></p>
+      <p id="monthlyTotal"></p>
+    </div>
+  </div>
+
+  <script>
+    const users = {
+      "admin": { password: "1234", role: "admin" },
+      "staff1": { password: "1111", role: "staff" }
+    };
+    let currentUserRole = "";
+
+    function login() {
+  const user = document.getElementById("username").value;
+  const pass = document.getElementById("password").value;
+  const error = document.getElementById("loginError");
+
+  if (users[user] && users[user].password === pass) {
+    currentUserRole = users[user].role;
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("app").classList.remove("hidden");
+
+    if (currentUserRole === "staff") {
+      document.getElementById("exportBtn").style.display = "none";
+      document.getElementById("printBtn").style.display = "none";
+      document.getElementById("totalsBox").style.display = "none";
+    }
+
+    // Only show add row after interface is shown
+    addRow();
+  } else {
+    error.innerText = "Invalid username or password";
+  }
+}
+
+
+    function addRow(rowData = ["", "", "", "", "", "", "", "", ""]) {
+      const tbody = document.querySelector('#dataTable tbody');
+      const tr = document.createElement('tr');
+
+      const tdDate = document.createElement('td');
+      const dateInput = document.createElement('input');
+      dateInput.type = "text";
+      dateInput.classList.add("date-picker");
+      dateInput.value = rowData[0];
+      tdDate.appendChild(dateInput);
+      tr.appendChild(tdDate);
+
+      const tdBoy = document.createElement('td');
+      const boySelect = document.createElement('select');
+      ["", "June", "Gabriel", "Rico", "June / Gabriel"].forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.text = name;
+        boySelect.appendChild(option);
+      });
+      boySelect.value = rowData[1];
+      tdBoy.appendChild(boySelect);
+      tr.appendChild(tdBoy);
+
+      const tdUnit = document.createElement('td');
+      const unitSelect = document.createElement('select');
+      ["Motorcycle", "Big Bike", "Sedan", "AUV", "SUV", "SUV(lift ) Van, L300", "Oversized Van"].forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.text = type;
+        unitSelect.appendChild(option);
+      });
+      unitSelect.value = rowData[2];
+      tdUnit.appendChild(unitSelect);
+      tr.appendChild(tdUnit);
+
+      const tdSales = document.createElement('td');
+      const priceInput = document.createElement('input');
+      priceInput.value = rowData[3];
+      priceInput.oninput = () => updateRow(tr);
+      tdSales.appendChild(priceInput);
+      tr.appendChild(tdSales);
+
+      for (let i = 4; i <= 5; i++) {
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.value = rowData[i];
+        input.disabled = true;
+        td.appendChild(input);
+        tr.appendChild(td);
+      }
+
+      const tdRemarks = document.createElement('td');
+      const remarksInput = document.createElement('input');
+      remarksInput.value = rowData[6];
+      tdRemarks.appendChild(remarksInput);
+      tr.appendChild(tdRemarks);
+
+      const tdPayment = document.createElement('td');
+      const paymentSelect = document.createElement('select');
+      ["Paid", "Not Paid"].forEach(status => {
+        const option = document.createElement('option');
+        option.value = status;
+        option.text = status;
+        paymentSelect.appendChild(option);
+      });
+      paymentSelect.value = rowData[7];
+      tdPayment.appendChild(paymentSelect);
+      tr.appendChild(tdPayment);
+
+      const tdMode = document.createElement('td');
+      const modeSelect = document.createElement('select');
+      ["Cash", "Gcash", "Paymaya", "Bank Transfer"].forEach(m => {
+        const option = document.createElement('option');
+        option.value = m;
+        option.text = m;
+        modeSelect.appendChild(option);
+      });
+      modeSelect.value = rowData[8];
+      tdMode.appendChild(modeSelect);
+      tr.appendChild(tdMode);
+
+      const actionTd = document.createElement('td');
+      if (currentUserRole === "admin") {
+        const actionSelect = document.createElement('select');
+        actionSelect.innerHTML = `
+          <option value="">Action</option>
+          <option value="delete">Delete</option>
+          <option value="duplicate">Duplicate</option>
+        `;
+        actionSelect.onchange = () => {
+          if (actionSelect.value === "delete") tr.remove();
+          if (actionSelect.value === "duplicate") {
+            const values = Array.from(tr.children).map(td => td.firstChild?.value || "");
+            addRow(values);
+          }
+          updateTotals();
+          actionSelect.value = "";
+        };
+        actionTd.appendChild(actionSelect);
+      }
+      tr.appendChild(actionTd);
+      tbody.appendChild(tr);
+
+      flatpickr(dateInput, { dateFormat: "Y-m-d", onChange: updateTotals });
+      updateRow(tr);
+    }
+
+    function updateRow(tr) {
+      const priceInput = tr.children[3].firstChild;
+      const thirtyInput = tr.children[4].firstChild;
+      const afterInput = tr.children[5].firstChild;
+      const price = parseFloat(priceInput.value);
+      if (!isNaN(price)) {
+        thirtyInput.value = (price * 0.3).toFixed(2);
+        afterInput.value = (price * 0.7).toFixed(2);
+      } else {
+        thirtyInput.value = "";
+        afterInput.value = "";
+      }
+      updateTotals();
+    }
+
+    function updateTotals() {
+      if (currentUserRole !== "admin") return;
+      const rows = Array.from(document.querySelectorAll('#dataTable tbody tr'));
+      let day = 0, week = 0, month = 0;
+      const now = new Date();
+      rows.forEach(tr => {
+        if (tr.style.display === "none") return;
+        const date = new Date(tr.children[0].firstChild.value);
+        const price = parseFloat(tr.children[3].firstChild.value);
+        const payment = tr.children[7].firstChild.value;
+        if (!isNaN(price) && !isNaN(date.getTime()) && payment === "Paid") {
+          if (isSameDay(date, now)) day += price;
+          if (isSameWeek(date, now)) week += price;
+          if (isSameMonth(date, now)) month += price;
+        }
+      });
+      document.getElementById('dailyTotal').innerText = `Today: ₱${day.toFixed(2)} | 30%: ₱${(day * 0.3).toFixed(2)} | After: ₱${(day * 0.7).toFixed(2)}`;
+      document.getElementById('weeklyTotal').innerText = `This Week: ₱${week.toFixed(2)} | 30%: ₱${(week * 0.3).toFixed(2)} | After: ₱${(week * 0.7).toFixed(2)}`;
+      document.getElementById('monthlyTotal').innerText = `This Month: ₱${month.toFixed(2)} | 30%: ₱${(month * 0.3).toFixed(2)} | After: ₱${(month * 0.7).toFixed(2)}`;
+    }
+
+    function isSameDay(d1, d2) {
+      return d1.toDateString() === d2.toDateString();
+    }
+    function isSameWeek(d1, d2) {
+      const startOfWeek = new Date(d2);
+      startOfWeek.setDate(d2.getDate() - d2.getDay());
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
+      return d1 >= startOfWeek && d1 <= endOfWeek;
+    }
+    function isSameMonth(d1, d2) {
+      return d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
+    }
+
+    function applyFilters() {
+      const fromVal = document.getElementById('fromDate').value;
+      const toVal = document.getElementById('toDate').value;
+      const boyVal = document.getElementById('filterBoy').value.toLowerCase();
+      const fromDate = fromVal ? new Date(fromVal) : null;
+      const toDate = toVal ? new Date(toVal) : null;
+      const rows = document.querySelectorAll('#dataTable tbody tr');
+      rows.forEach(row => {
+        const dateVal = row.children[0].firstChild.value;
+        const boy = row.children[1].firstChild.value.toLowerCase();
+        const rowDate = new Date(dateVal);
+        const matchesDate = (!fromDate || rowDate >= fromDate) && (!toDate || rowDate <= toDate);
+        const matchesBoy = !boyVal || boy.includes(boyVal);
+        row.style.display = matchesDate && matchesBoy ? "" : "none";
+      });
+      updateTotals();
+    }
+
+    function clearFilters() {
+      document.getElementById('fromDate').value = '';
+      document.getElementById('toDate').value = '';
+      document.getElementById('filterBoy').value = '';
+      applyFilters();
+    }
+
+    function saveData() {
+  const url = "https://script.google.com/macros/s/AKfycbx509we6aJpNzcMkNz31tbAHk9YiCukdKq-1MBixveD6Nk3zjDS9TBf1uO7W-VeMGfgiw/exec";
+  
+  // Collect row data
+  const rows = Array.from(document.querySelectorAll('#dataTable tbody tr')).map(tr =>
+    Array.from(tr.children).slice(0, 9).map(td => td.firstChild?.value || "")
+  );
+
+  // Retrieve totals
+  const dailyTotal = document.getElementById("dailyTotal").innerText;
+  const weeklyTotal = document.getElementById("weeklyTotal").innerText;
+  const monthlyTotal = document.getElementById("monthlyTotal").innerText;
+
+  // Append totals as additional rows
+  rows.push(["", "", "", "", "", "", "", "", ""]); // Empty row for separation
+  rows.push(["", "", "", "", "", "", "", "", "Totals:"]);
+  rows.push(["", "", "", "", "", "", "", "", `Today: ${dailyTotal}`]);
+  rows.push(["", "", "", "", "", "", "", "", `This Week: ${weeklyTotal}`]);
+  rows.push(["", "", "", "", "", "", "", "", `This Month: ${monthlyTotal}`]);
+
+  // Send data to Google Sheets
+  fetch(url, {
+    method: "POST",
+    mode: "no-cors", // Needed for Google Apps Script
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ data: rows })
+  })
+  .then(() => {
+    alert("Saved to Google Sheets successfully!");
+  })
+  .catch(err => {
+    alert("Failed to save to Google Sheets: " + err.message);
+    console.error(err);
+  });
+}
+
+
+
+    function exportCSV() {
+  const rows = Array.from(document.querySelectorAll('#dataTable tbody tr')).map(tr =>
+    Array.from(tr.children).slice(0, 9).map(td => td.firstChild?.value || "")
+  );
+  let csv = "Date,Carwash Boy,Unit Type,Sales Price,30%,After 30%,Remarks,Payment,Mode of Payment\n";
+  rows.forEach(r => {
+    if (r[0] || r[1] || r[2]) {
+      csv += r.join(",") + "\n";
+    }
+  });
+
+  // Add Totals section
+  const daily = document.getElementById("dailyTotal").innerText;
+  const weekly = document.getElementById("weeklyTotal").innerText;
+  const monthly = document.getElementById("monthlyTotal").innerText;
+
+  csv += "\nTotals:\n";
+  csv += `Today:,${daily}\n`;
+  csv += `This Week:,${weekly}\n`;
+  csv += `This Month:,${monthly}\n`;
+
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+  const filename = `GetCleanSales_${dateStr}.csv`;
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+  </script>
+</body>
+</html>
